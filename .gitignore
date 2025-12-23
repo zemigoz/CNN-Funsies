@@ -1,0 +1,16 @@
+# Conda / environments
+miniconda3/
+anaconda3/
+.env/
+.venv/
+conda-env/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
