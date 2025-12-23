@@ -18,5 +18,8 @@ __pycache__/
 # Compressed data/zips
 *.tar.gz
 
+# data folder
+data/
+
 #My Notes
 notes.md
