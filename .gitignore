@@ -14,3 +14,9 @@ __pycache__/
 
 # OS
 .DS_Store
+
+# Compressed data/zips
+*.tar.gz
+
+#My Notes
+notes.md
