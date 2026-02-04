@@ -18,8 +18,12 @@ __pycache__/
 # Compressed data/zips
 *.tar.gz
 
-# data folder
+# folders
 data/
+wandb/
 
 #My Notes
 notes.md
+
+#dont expose api key
+wandb_api_key.txt
