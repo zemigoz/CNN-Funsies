@@ -23,12 +23,16 @@ This is a personal tutorial to PyTorch and Convolutional Neural Networks (CNNs).
 
 ## Installations
 
-Running the code first requires dependencies. Note <u>**the GPU-backend of PyTorch is not a part of the program's dependencies**</u>. Recent Fedora Linux updates and my wifi chipset make it mutually exclusive to support wifi or the GPU-backend. I chose the former. Please look into PyTorch's [download](https://pytorch.org/get-started/locally/) page if you would like GPU support.
-
-Downloading all dependencies requires `conda`. Once installed, run the following:
+Running the code first requires dependencies. Downloading most dependencies requires `conda`. Once installed, run the following:
 
 ```
 conda env create -f cnn_environment.yml -n cnn
+```
+
+This is not enough however. PyTorch and its other libraries cannot be installed through `conda` alone. Note <u>**the GPU-backend of PyTorch is not a part of the program's dependencies**</u>. Recent Fedora Linux updates and my wifi chipset make it mutually exclusive to support wifi or the GPU-backend. I chose the former. Please look into PyTorch's [download](https://pytorch.org/get-started/locally/) page. It is as simple as selecting what OS and how you would like to download then run 1 command. Run that command after you activate the `conda` environment as:
+
+```
+conda activate cnn
 ```
 
 ## Configuration
