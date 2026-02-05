@@ -35,6 +35,7 @@ from src.analysis import *
 BASE_DIR = Path(__file__).resolve().parent
 
 WANDB_API_KEY_PATH = BASE_DIR / Path("wandb_api_key.txt")
+WANDB_PROJECT_NAME = "tutorial_cnn"
 
 RNG_SEED = 314
 
@@ -132,7 +133,7 @@ def main():
         
         # wandb initialize
         wandb.init(
-            project="tutorial_nn", 
+            project=WANDB_PROJECT_NAME, 
             group=str(wandb_group_name),
             name=f"fold_{fold}", 
             config={
@@ -235,7 +236,7 @@ def main():
     weighted_avg = metrics_report["weighted avg"]
 
     wandb.init(
-        project="tutorial_nn", 
+        project=WANDB_PROJECT_NAME, 
         group=str(wandb_group_name),
         name=f"validation_set", 
         config={
