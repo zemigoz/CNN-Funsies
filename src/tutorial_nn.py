@@ -18,7 +18,6 @@ class NeuralNetwork(nn.Module):
             nn.Linear(512, 64),
             nn.ReLU(),
             nn.Linear(64, 10)
-            # nn.Dropout(.5), #0.2-0.5 for hidden and 0.2 max for input and conv
         )
 
         # self.conv_layers = nn.Sequential(

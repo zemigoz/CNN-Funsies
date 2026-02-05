@@ -25,7 +25,7 @@ from torchvision.transforms import transforms
 from torchvision.transforms import ToTensor
 
 from src.tutorial_nn import NeuralNetwork
-from src.tutorial_run import *
+from src.run_loops import *
 from src.analysis import *
 
 
@@ -38,9 +38,9 @@ WANDB_API_KEY_PATH = BASE_DIR / Path("wandb_api_key.txt")
 
 RNG_SEED = 314
 
-FOLDS = 5
+FOLDS = 2
 
-EPOCHS = 5
+EPOCHS = 3
 BATCH_SIZE = 64
 ALPHA = 1e-4
 # --------------------------------------------------------------------------- #
@@ -62,31 +62,44 @@ def main():
     wandb_group_name = Path(f"MNIST-{pd.Timestamp.now().strftime('%Y-%m-%d_%H-%M')}")
     
 
-    training_data = datasets.FashionMNIST(
+    training_data = datasets.MNIST(
         root="data",
         train=True,
         download=True,
         transform=ToTensor()
     )
 
-    test_data = datasets.FashionMNIST(
+    test_data = datasets.MNIST(
         root="data",
         train=False,
         download=True,
         transform=ToTensor()
     )
 
+    # labels_map = {
+    #     0: "T-Shirt",
+    #     1: "Trouser",
+    #     2: "Pullover",
+    #     3: "Dress",
+    #     4: "Coat",
+    #     5: "Sandal",
+    #     6: "Shirt",
+    #     7: "Sneaker",
+    #     8: "Bag",
+    #     9: "Ankle Boot",
+    # }
+
     labels_map = {
-        0: "T-Shirt",
-        1: "Trouser",
-        2: "Pullover",
-        3: "Dress",
-        4: "Coat",
-        5: "Sandal",
-        6: "Shirt",
-        7: "Sneaker",
-        8: "Bag",
-        9: "Ankle Boot",
+        0: "0",
+        1: "1",
+        2: "2",
+        3: "3",
+        4: "4",
+        5: "5",
+        6: "6",
+        7: "7",
+        8: "8",
+        9: "9",
     }
 
     # class_distribution(training_data=training_data)
@@ -100,12 +113,6 @@ def main():
     train_dataset = train_dataloader.dataset
 
     labels = [train_dataset[i][1] for i in range(len(train_dataset))]
-
-    all_train_losses = []
-    all_train_accuracies = []
-    all_test_losses = []
-    all_test_accuracies = []
-    all_other_metric_reports = []
 
     ####### KFOLD STRATIFY
     skf = StratifiedKFold(
@@ -121,11 +128,11 @@ def main():
         # initiate all model related things
         model = NeuralNetwork().to(device)
         loss_fn = nn.CrossEntropyLoss()
-        optimizer = torch.optim.SGD(model.parameters(), lr=ALPHA)
+        optimizer = torch.optim.Adam(model.parameters(), lr=ALPHA)
         
         # wandb initialize
         wandb.init(
-            project="tutorial_cnn", 
+            project="tutorial_nn", 
             group=str(wandb_group_name),
             name=f"fold_{fold}", 
             config={
@@ -164,36 +171,31 @@ def main():
             epoch_train_losses.append(train_loss)
             epoch_train_accuracies.append(train_acc)
 
-        # test on kfold test set (not validation set)
-        test_loss, test_acc, _, _, metrics_report = test_loop(
+
+        test_loss, metrics_report = test_loop(
             dataloader=test_kfold_loader, 
             model=model, 
             loss_fn=loss_fn, 
             labels_map=labels_map
         )
 
+        macro_avg = metrics_report["macro avg"]
+        weighted_avg = metrics_report["weighted avg"]
+
         wandb.log({
             "fold": fold,
+
             "kfold/test_loss": test_loss,
-            "kfold/test_accuracy": test_acc,
+            "kfold/test_accuracy": metrics_report["accuracy"],
+
+            "kfold/macro_avg/precision": macro_avg["precision"],
+            "kfold/macro_avg/recall": macro_avg["recall"],
+            "kfold/macro_avg/f1": macro_avg["f1-score"],
+
+            "kfold/weighted_avg/precision": weighted_avg["precision"],
+            "kfold/weighted_avg/recall": weighted_avg["recall"],
+            "kfold/weighted_avg/f1": weighted_avg["f1-score"],
         })
-
-        for class_name, class_metrics in metrics_report.items():
-            # if class_name not in ["macro avg", "weighted avg", "accuracy"]:
-            if isinstance(class_metrics, dict) and "precision" in class_metrics:
-                wandb.log({
-                    f"fold_{fold}_{class_name}_precision": class_metrics["precision"],
-                    f"fold_{fold}_{class_name}_recall": class_metrics["recall"],
-                    f"fold_{fold}_{class_name}_f1": class_metrics["f1-score"]
-                })
-
-
-        # impotent noombas
-        all_train_losses.extend(epoch_train_losses)
-        all_train_accuracies.extend(epoch_train_accuracies)
-        all_test_losses.append(test_loss)
-        all_test_accuracies.append(test_acc)
-        all_other_metric_reports.append(metrics_report)
 
         wandb.finish()
         del model
@@ -206,7 +208,7 @@ def main():
     ##### VALIDATATION
     model = NeuralNetwork().to(device)
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=ALPHA)
+    optimizer = torch.optim.Adam(model.parameters(), lr=ALPHA)
 
     # epoch training runs
     epoch_train_losses = []
@@ -222,15 +224,18 @@ def main():
         epoch_train_accuracies.append(train_acc)
 
     # test on kfold test set (not validation set)
-    val_loss, val_acc, _, _, metrics_report = test_loop(
+    val_loss, metrics_report = test_loop(
         dataloader=validate_dataloader, 
         model=model, 
         loss_fn=loss_fn, 
         labels_map=labels_map
     )
 
+    macro_avg = metrics_report["macro avg"]
+    weighted_avg = metrics_report["weighted avg"]
+
     wandb.init(
-        project="tutorial_cnn", 
+        project="tutorial_nn", 
         group=str(wandb_group_name),
         name=f"validation_set", 
         config={
@@ -244,39 +249,20 @@ def main():
     )
 
     wandb.log({
-        "val_loss": val_loss,
-        "val_acc": val_acc,
+        "val/loss": val_loss,
+        "val/accuracy": metrics_report["accuracy"],
+
+        "val/macro_avg/precision": macro_avg["precision"],
+        "val/macro_avg/recall": macro_avg["recall"],
+        "val/macro_avg/f1": macro_avg["f1-score"],
+
+        "val/weighted_avg/precision": weighted_avg["precision"],
+        "val/weighted_avg/recall": weighted_avg["recall"],
+        "val/weighted_avg/f1": weighted_avg["f1-score"],
     })
 
-    for class_name, class_metrics in metrics_report.items():
-        if isinstance(class_metrics, dict) and "precision" in class_metrics:
-            wandb.log({
-                f"val_{class_name}_precision": class_metrics["precision"],
-                f"val_{class_name}_recall": class_metrics["recall"],
-                f"val_{class_name}_f1": class_metrics["f1-score"]
-            })
 
     wandb.finish()
-
-    # # Analysis
-    # sample_output(
-    #     model=model, 
-    #     test_dataloader=test_dataloader, 
-    #     labels_map=labels_map
-    # )
-
-    # loss_over_epoch(
-    #     train_losses=train_losses,
-    #     test_losses=test_losses,
-    #     train_accuracies=train_accuracies,
-    #     test_accuracies=test_accuracies
-    # )
-
-    # plot_confusion_matrix(
-    #     test_labels=test_labels, 
-    #     test_preds=test_preds, 
-    #     labels_map=labels_map
-    # )    
 
 if __name__ == '__main__':
     start_time = time.time()
